@@ -186,7 +186,10 @@ impl<T: AddIn> AddInWrapper for AddInContainer<T> {
         num: usize,
         alias: usize,
     ) -> Option<&'static [u16]> {
-        self.add_in.list_functions().get(num).map(|x| x.names[0])
+        self.add_in
+            .list_functions()
+            .get(num)
+            .map(|x| x.names[alias])
     }
 
     fn get_n_params(&self, num: usize) -> usize {
@@ -246,9 +249,12 @@ impl<T: AddIn> AddInWrapper for AddInContainer<T> {
 
         let name_string = String::from_utf16_lossy(func_desc.names[0]);
         let name_utf8 = name_string.as_str().trim_matches(char::from(0));
-        let call_result = match self.add_in.call_function(name_utf8, params) {
+        let _call_result = match self.add_in.call_function(name_utf8, params) {
             Ok(r) => r,
-            Err(err) => return false,
+            Err(err) => {
+                log::error!("Error: {}", err);
+                return false;
+            }
         };
         true
     }
@@ -271,7 +277,10 @@ impl<T: AddIn> AddInWrapper for AddInContainer<T> {
         let name_utf8 = name_string.as_str().trim_matches(char::from(0));
         let call_result = match self.add_in.call_function(name_utf8, params) {
             Ok(r) => r,
-            Err(err) => return false,
+            Err(err) => {
+                log::error!("Error: {}", err);
+                return false;
+            }
         };
         let Some(return_value) = call_result else {return false};
         match return_value {

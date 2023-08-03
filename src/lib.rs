@@ -14,8 +14,16 @@ use ffi::{
 };
 
 use color_eyre::eyre::{eyre, Result};
+use log::LevelFilter;
+use log4rs::{
+    append::file::FileAppender,
+    config::{Appender, Root},
+    encode::pattern::PatternEncoder,
+    Config,
+};
 use std::{
     ffi::{c_int, c_long, c_void},
+    path::PathBuf,
     sync::{
         atomic::{AtomicI32, Ordering},
         Arc,
@@ -30,6 +38,7 @@ pub static mut PLATFORM_CAPABILITIES: AtomicI32 = AtomicI32::new(-1);
 struct AddInDescription {
     name: &'static [u16],
     connection: Arc<Option<&'static Connection>>,
+    log_handle: Option<log4rs::Handle>,
 
     functions: Vec<(
         ComponentFuncDescription,
@@ -44,7 +53,7 @@ impl AddInDescription {
         Self {
             name: &utf16_null!("MyAddIn"),
             connection: Arc::new(None),
-
+            log_handle: None,
             functions: vec![
                 (
                     ComponentFuncDescription::new::<0>(
@@ -76,6 +85,17 @@ impl AddInDescription {
                     ),
                     Self::fetch,
                 ),
+                (
+                    ComponentFuncDescription::new::<1>(
+                        vec![
+                            &utf16_null!("ИнициализироватьЛоггер"),
+                            &utf16_null!("InitLogger"),
+                        ],
+                        false,
+                        &[None],
+                    ),
+                    Self::init_logger,
+                ),
             ],
 
             some_prop_container: 0,
@@ -90,6 +110,7 @@ impl AddInDescription {
             return Err(eyre!("Prop is too big"));
         }
         self.some_prop_container += 1;
+        log::info!("Prop is now {}", self.some_prop_container);
         Ok(None)
     }
 
@@ -98,23 +119,60 @@ impl AddInDescription {
             Some(ParamValue::I32(val)) => *val,
             _ => return Err(eyre!("Invalid parameter")),
         };
+        if sleep_duration_ms < 0 {
+            return Err(eyre!("Invalid parameter"));
+        }
+        if sleep_duration_ms > 100000 {
+            return Err(eyre!("Too long"));
+        }
+        let sleep_duration_ms = sleep_duration_ms as u64;
 
         let connection = self.connection.clone();
         let name = from_os_string(self.name);
         thread::spawn(move || {
-            thread::sleep(Duration::from_secs(1));
+            log::info!("Timer started");
+            thread::sleep(Duration::from_millis(sleep_duration_ms));
+            log::info!("Timer ended");
             if let Some(connection) = &*connection {
                 connection.external_event(&name, "TimerEnd", "OK");
             }
         });
 
-        Ok(Some(ParamValue::I32(sleep_duration_ms)))
+        Ok(Some(ParamValue::I32(sleep_duration_ms as i32)))
     }
 
     fn fetch(&mut self, _params: &[ParamValue]) -> Result<Option<ParamValue>> {
         let Ok(result) = ureq::post("https://echo.hoppscotch.io").send_string("smth") else {return Err(eyre!("Failed to fetch"));};
         let Ok(body) = result.into_string() else { return Err(eyre!("Failed to get body"));};
         Ok(Some(ParamValue::Str(os_string(&body))))
+    }
+
+    fn init_logger(
+        &mut self,
+        params: &[ParamValue],
+    ) -> Result<Option<ParamValue>> {
+        let log_file_path = match params.get(0) {
+            Some(ParamValue::Str(val)) => from_os_string(val),
+            _ => return Err(eyre!("Invalid parameter")),
+        };
+        let log_file_path = PathBuf::from(log_file_path);
+        if log_file_path.is_dir() {
+            return Err(eyre!("Need a file path"));
+        };
+
+        let log_file_appender = FileAppender::builder()
+            .encoder(Box::new(PatternEncoder::new("{d} - {m}{n}")))
+            .build(log_file_path)?;
+
+        let config = Config::builder()
+            .appender(
+                Appender::builder().build("file", Box::new(log_file_appender)),
+            )
+            .build(Root::builder().appender("file").build(LevelFilter::Info))?;
+
+        self.log_handle = Some(log4rs::init_config(config)?);
+        log::info!("Logger initialized");
+        Ok(None)
     }
 }
 

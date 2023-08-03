@@ -15,5 +15,7 @@ strip = true      # Automatically strip symbols from the binary.
 
 [dependencies]
 color-eyre = "0.6.2"
+log = "0.4.19"
+log4rs = "1.2.0"
 ureq = "2.7.1"
 utf16_lit = "2.0"
