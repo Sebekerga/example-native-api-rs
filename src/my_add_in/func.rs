@@ -1,9 +1,7 @@
 use super::MyAddInDescription;
 use crate::add_in::ComponentFuncDescription;
-use crate::ffi::{
-    types::ParamValue,
-    utils::{from_os_string, os_string},
-};
+use crate::ffi::utils::os_string;
+use crate::ffi::{types::ParamValue, utils::from_os_string};
 use color_eyre::eyre::{eyre, Result};
 use log::LevelFilter;
 use log4rs::{

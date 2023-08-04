@@ -1,7 +1,7 @@
 use crate::ffi::{
     connection::Connection,
     types::{ParamValue, ReturnValue},
-    utils::{from_os_string, os_string},
+    utils::{from_os_string, os_string_nil},
 };
 use color_eyre::eyre::Result;
 
@@ -98,7 +98,7 @@ impl<T: AddIn> AddInWrapper for AddInContainer<T> {
         self.add_in
             .list_parameters()
             .get(num)
-            .map(|x| os_string(x.names[alias]))
+            .map(|x| os_string_nil(x.names[alias]))
     }
 
     fn get_prop_val(&self, num: usize, val: ReturnValue) -> bool {
@@ -171,7 +171,7 @@ impl<T: AddIn> AddInWrapper for AddInContainer<T> {
         self.add_in
             .list_functions()
             .get(num)
-            .map(|x| os_string(x.names[alias]))
+            .map(|x| os_string_nil(x.names[alias]))
     }
 
     fn get_n_params(&self, num: usize) -> usize {

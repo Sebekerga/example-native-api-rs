@@ -14,16 +14,22 @@ pub unsafe fn get_str<'a>(s: *const u16) -> &'a [u16] {
 }
 
 #[cfg(target_family = "unix")]
-pub fn os_string(s: &str) -> Vec<u16> {
+pub fn os_string_nil(s: &str) -> Vec<u16> {
     s.encode_utf16().collect()
+}
+
+#[cfg(target_family = "windows")]
+pub fn os_string_nil(s: &str) -> Vec<u16> {
+    let os_str = std::ffi::OsStr::new(s);
+    std::os::windows::prelude::OsStrExt::encode_wide(os_str)
+        .chain(Some(0).into_iter())
+        .collect()
 }
 
 #[cfg(target_family = "windows")]
 pub fn os_string(s: &str) -> Vec<u16> {
     let os_str = std::ffi::OsStr::new(s);
-    std::os::windows::prelude::OsStrExt::encode_wide(os_str)
-        .chain(Some(0).into_iter())
-        .collect()
+    std::os::windows::prelude::OsStrExt::encode_wide(os_str).collect()
 }
 
 pub fn from_os_string(s: &[u16]) -> String {
