@@ -12,7 +12,7 @@ impl MyAddInDescription {
     pub fn generate_prop_list() -> Vec<PropListElement> {
         vec![PropListElement {
             description: ComponentPropDescription {
-                names: &["prop"],
+                names: &["Property", "Свойство"],
                 readable: true,
                 writable: true,
             },

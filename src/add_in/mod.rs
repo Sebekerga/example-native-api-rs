@@ -6,13 +6,13 @@ use crate::ffi::{
 use color_eyre::eyre::Result;
 
 pub struct ComponentPropDescription {
-    pub names: &'static [&'static str],
+    pub names: &'static [&'static str; 2],
     pub readable: bool,
     pub writable: bool,
 }
 
 pub struct ComponentFuncDescription {
-    pub names: &'static [&'static str],
+    pub names: &'static [&'static str; 2],
     pub params_count: usize,
     pub returns_val: bool,
     pub default_values: &'static [Option<ParamValue>],
