@@ -6,8 +6,6 @@ use crate::ffi::{
     types::ParamValue,
     utils::{from_os_string, os_string},
 };
-use crate::{FunctionListElement, PropListElement};
-
 use color_eyre::eyre::{eyre, Result};
 use log::LevelFilter;
 use log4rs::{
@@ -18,6 +16,18 @@ use log4rs::{
 };
 use std::{path::PathBuf, sync::Arc, thread, time::Duration};
 use utf16_lit::utf16_null;
+
+pub struct FunctionListElement {
+    description: ComponentFuncDescription,
+    callback:
+        fn(&mut AddInDescription, &[ParamValue]) -> Result<Option<ParamValue>>,
+}
+
+pub struct PropListElement {
+    description: ComponentPropDescription,
+    get_callback: Option<fn(&AddInDescription) -> Option<ParamValue>>,
+    set_callback: Option<fn(&mut AddInDescription, &ParamValue) -> bool>,
+}
 
 pub struct AddInDescription {
     name: &'static [u16],
