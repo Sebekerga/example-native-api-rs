@@ -1,24 +1,25 @@
 use crate::ffi::{
     connection::Connection,
     types::{ParamValue, ReturnValue},
+    utils::{from_os_string, os_string},
 };
 use color_eyre::eyre::Result;
 
 pub struct ComponentPropDescription {
-    pub name: &'static [u16],
+    pub names: &'static [&'static str],
     pub readable: bool,
     pub writable: bool,
 }
 
 pub struct ComponentFuncDescription {
-    pub names: Vec<&'static [u16]>,
+    pub names: &'static [&'static str],
     pub params_count: usize,
     pub returns_val: bool,
     pub default_values: &'static [Option<ParamValue>],
 }
 impl ComponentFuncDescription {
     pub fn new<const PARAMS_COUNT: usize>(
-        names: Vec<&'static [u16]>,
+        names: &'static [&'static str],
         returns_val: bool,
         default_values: &'static [Option<ParamValue>; PARAMS_COUNT],
     ) -> Self {
@@ -28,18 +29,6 @@ impl ComponentFuncDescription {
             returns_val,
             default_values,
         }
-    }
-
-    pub fn str_names(&self) -> Vec<String> {
-        self.names
-            .iter()
-            .map(|name_utf16| {
-                let name_string = String::from_utf16_lossy(name_utf16)
-                    .trim_matches(char::from(0))
-                    .to_string();
-                name_string
-            })
-            .collect()
     }
 }
 
@@ -98,18 +87,18 @@ impl<T: AddIn> AddInWrapper for AddInContainer<T> {
     }
 
     fn find_prop(&self, name: &[u16]) -> Option<usize> {
+        let name_str = from_os_string(name);
         self.add_in
             .list_parameters()
             .iter()
-            .position(|x| x.name == name)
+            .position(|x| x.names.iter().any(|y| y == &name_str))
     }
 
-    fn get_prop_name(
-        &self,
-        num: usize,
-        alias: usize,
-    ) -> Option<&'static [u16]> {
-        self.add_in.list_parameters().get(num).map(|x| x.name)
+    fn get_prop_name(&self, num: usize, alias: usize) -> Option<Vec<u16>> {
+        self.add_in
+            .list_parameters()
+            .get(num)
+            .map(|x| os_string(x.names[alias]))
     }
 
     fn get_prop_val(&self, num: usize, val: ReturnValue) -> bool {
@@ -121,9 +110,7 @@ impl<T: AddIn> AddInWrapper for AddInContainer<T> {
             return false;
         };
 
-        let name_string = String::from_utf16_lossy(param_desc.name);
-        let name_utf8 = name_string.as_str().trim_matches(char::from(0));
-        let Some(param_data) = self.add_in.get_parameter(name_utf8) else {
+        let Some(param_data) = self.add_in.get_parameter(param_desc.names[0]) else {
             return false
         };
 
@@ -149,9 +136,7 @@ impl<T: AddIn> AddInWrapper for AddInContainer<T> {
             return false;
         };
 
-        let name_string = String::from_utf16_lossy(param_desc.name);
-        let name_utf8 = name_string.as_str().trim_matches(char::from(0));
-        self.add_in.set_parameter(name_utf8, val)
+        self.add_in.set_parameter(param_desc.names[0], val)
     }
 
     fn is_prop_readable(&self, num: usize) -> bool {
@@ -175,21 +160,18 @@ impl<T: AddIn> AddInWrapper for AddInContainer<T> {
     }
 
     fn find_method(&self, name: &[u16]) -> Option<usize> {
+        let name_str = from_os_string(name);
         self.add_in
             .list_functions()
             .iter()
-            .position(|x| x.names.contains(&name))
+            .position(|x| x.names.iter().any(|y| y == &name_str))
     }
 
-    fn get_method_name(
-        &self,
-        num: usize,
-        alias: usize,
-    ) -> Option<&'static [u16]> {
+    fn get_method_name(&self, num: usize, alias: usize) -> Option<Vec<u16>> {
         self.add_in
             .list_functions()
             .get(num)
-            .map(|x| x.names[alias])
+            .map(|x| os_string(x.names[alias]))
     }
 
     fn get_n_params(&self, num: usize) -> usize {
@@ -247,15 +229,14 @@ impl<T: AddIn> AddInWrapper for AddInContainer<T> {
             return false
         };
 
-        let name_string = String::from_utf16_lossy(func_desc.names[0]);
-        let name_utf8 = name_string.as_str().trim_matches(char::from(0));
-        let _call_result = match self.add_in.call_function(name_utf8, params) {
-            Ok(r) => r,
-            Err(err) => {
-                log::error!("Error: {}", err);
-                return false;
-            }
-        };
+        let _call_result =
+            match self.add_in.call_function(func_desc.names[0], params) {
+                Ok(r) => r,
+                Err(err) => {
+                    log::error!("Error: {}", err);
+                    return false;
+                }
+            };
         true
     }
 
@@ -273,15 +254,14 @@ impl<T: AddIn> AddInWrapper for AddInContainer<T> {
             return false;
         }
 
-        let name_string = String::from_utf16_lossy(func_desc.names[0]);
-        let name_utf8 = name_string.as_str().trim_matches(char::from(0));
-        let call_result = match self.add_in.call_function(name_utf8, params) {
-            Ok(r) => r,
-            Err(err) => {
-                log::error!("Error: {}", err);
-                return false;
-            }
-        };
+        let call_result =
+            match self.add_in.call_function(func_desc.names[0], params) {
+                Ok(r) => r,
+                Err(err) => {
+                    log::error!("Error: {}", err);
+                    return false;
+                }
+            };
         let Some(return_value) = call_result else {return false};
         match return_value {
             ParamValue::Bool(data) => val.set_bool(data),
@@ -306,22 +286,17 @@ pub trait AddInWrapper {
         2000
     }
     fn done(&mut self);
-    fn register_extension_as(&mut self) -> &'static [u16];
+    fn register_extension_as(&mut self) -> &[u16];
     fn get_n_props(&self) -> usize;
     fn find_prop(&self, name: &[u16]) -> Option<usize>;
-    fn get_prop_name(&self, num: usize, alias: usize)
-        -> Option<&'static [u16]>;
+    fn get_prop_name(&self, num: usize, alias: usize) -> Option<Vec<u16>>;
     fn get_prop_val(&self, num: usize, val: ReturnValue) -> bool;
     fn set_prop_val(&mut self, num: usize, val: &ParamValue) -> bool;
     fn is_prop_readable(&self, num: usize) -> bool;
     fn is_prop_writable(&self, num: usize) -> bool;
     fn get_n_methods(&self) -> usize;
     fn find_method(&self, name: &[u16]) -> Option<usize>;
-    fn get_method_name(
-        &self,
-        num: usize,
-        alias: usize,
-    ) -> Option<&'static [u16]>;
+    fn get_method_name(&self, num: usize, alias: usize) -> Option<Vec<u16>>;
     fn get_n_params(&self, num: usize) -> usize;
     fn get_param_def_value(
         &self,

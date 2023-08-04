@@ -57,10 +57,7 @@ impl AddInDescription {
             functions: vec![
                 (
                     ComponentFuncDescription::new::<0>(
-                        vec![
-                            &utf16_null!("Итерировать"),
-                            &utf16_null!("Iterate"),
-                        ],
+                        &["Итерировать", "Iterate"],
                         false,
                         &[],
                     ),
@@ -68,7 +65,7 @@ impl AddInDescription {
                 ),
                 (
                     ComponentFuncDescription::new::<1>(
-                        vec![&utf16_null!("Таймер"), &utf16_null!("Timer")],
+                        &["Таймер", "Timer"],
                         true,
                         &[Some(ParamValue::I32(1000))],
                     ),
@@ -76,10 +73,7 @@ impl AddInDescription {
                 ),
                 (
                     ComponentFuncDescription::new::<0>(
-                        vec![
-                            &utf16_null!("ПолучитьХэТэТэПэ"),
-                            &utf16_null!("FetchHTTP"),
-                        ],
+                        &["ПолучитьХэТэТэПэ", "FetchHTTP"],
                         true,
                         &[],
                     ),
@@ -87,10 +81,7 @@ impl AddInDescription {
                 ),
                 (
                     ComponentFuncDescription::new::<1>(
-                        vec![
-                            &utf16_null!("ИнициализироватьЛоггер"),
-                            &utf16_null!("InitLogger"),
-                        ],
+                        &[("ИнициализироватьЛоггер"), ("InitLogger")],
                         false,
                         &[None],
                     ),
@@ -196,7 +187,7 @@ impl AddIn for AddInDescription {
         let func = self
             .functions
             .iter()
-            .find(|(desc, _)| desc.str_names().iter().any(|n| n == name));
+            .find(|(desc, _)| desc.names.iter().any(|n| n == &name));
 
         let Some(func) = func.map(|(_, callback)| callback) else { return Err(eyre!("No function with such name")) };
         func(self, params)
@@ -226,7 +217,7 @@ impl AddIn for AddInDescription {
 
     fn list_parameters(&self) -> Vec<ComponentPropDescription> {
         vec![ComponentPropDescription {
-            name: &utf16_null!("prop"),
+            names: &["prop"],
             readable: true,
             writable: true,
         }]
