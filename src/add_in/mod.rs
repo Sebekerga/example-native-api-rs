@@ -35,7 +35,7 @@ impl ComponentFuncDescription {
 pub trait AddIn {
     fn init(&mut self, interface: &'static Connection) -> bool;
     fn add_in_name(&self) -> &'static [u16];
-    fn list_parameters(&self) -> Vec<ComponentPropDescription> {
+    fn list_parameters(&self) -> Vec<&ComponentPropDescription> {
         Vec::new()
     }
     fn list_functions(&self) -> Vec<&ComponentFuncDescription> {
