@@ -1,6 +1,6 @@
 use std::ffi::{c_long, c_ushort};
 
-use super::{types::TVariant, utils::os_string};
+use super::{types::TVariant, utils::os_string_nil};
 
 #[repr(C)]
 struct ConnectionVTable {
@@ -64,9 +64,9 @@ impl Connection {
 
     pub fn external_event(&self, caller: &str, name: &str, data: &str) -> bool {
         unsafe {
-            let caller_ptr = os_string(caller).as_mut_ptr();
-            let name_ptr = os_string(name).as_mut_ptr();
-            let data_ptr = os_string(data).as_mut_ptr();
+            let caller_ptr = os_string_nil(caller).as_mut_ptr();
+            let name_ptr = os_string_nil(name).as_mut_ptr();
+            let data_ptr = os_string_nil(data).as_mut_ptr();
             (self.vptr1.external_event)(self, caller_ptr, name_ptr, data_ptr)
         }
     }

@@ -2,6 +2,7 @@ use super::MyAddInDescription;
 use crate::add_in::ComponentFuncDescription;
 use crate::ffi::utils::os_string;
 use crate::ffi::{types::ParamValue, utils::from_os_string};
+use base64::{engine::general_purpose, Engine as _};
 use color_eyre::eyre::{eyre, Result};
 use log::LevelFilter;
 use log4rs::{
@@ -46,6 +47,14 @@ impl MyAddInDescription {
                     &[],
                 ),
                 callback: Self::fetch,
+            },
+            FunctionListElement {
+                description: ComponentFuncDescription::new::<1>(
+                    &["ПолучитьХэТэТэПэПараллельно", "FetchHTTPConcurrently"],
+                    true,
+                    &[None],
+                ),
+                callback: Self::concurrent_fetch,
             },
             FunctionListElement {
                 description: ComponentFuncDescription::new::<1>(
@@ -101,6 +110,43 @@ impl MyAddInDescription {
         let Ok(result) = ureq::post("https://echo.hoppscotch.io").send_string("smth") else {return Err(eyre!("Failed to fetch"));};
         let Ok(body) = result.into_string() else { return Err(eyre!("Failed to get body"));};
         Ok(Some(ParamValue::Str(os_string(&body))))
+    }
+
+    fn concurrent_fetch(
+        &mut self,
+        params: &[ParamValue],
+    ) -> Result<Option<ParamValue>> {
+        let request_count = match params.get(0) {
+            Some(ParamValue::I32(val)) => *val,
+            _ => return Err(eyre!("Invalid parameter")),
+        };
+        if request_count < 0 {
+            return Err(eyre!("Invalid parameter"));
+        }
+        let request_count = request_count as u64;
+
+        let mut threads_handles = Vec::new();
+        for _ in 0..request_count {
+            let handle = thread::spawn(move || {
+                let Ok(result) = ureq::post("https://echo.hoppscotch.io").send_string("smth") else {return Err(eyre!("Failed to fetch"));};
+                let Ok(body) = result.into_string() else { return Err(eyre!("Failed to get body"));};
+                Ok(body)
+            });
+            threads_handles.push(handle);
+        }
+        let results: Vec<String> = threads_handles
+            .into_iter()
+            .map(|h| -> String {
+                let Ok(req_result) =
+                    h.join() else { return format!("ERR")};
+                let Ok(req_text) = req_result else { return format!("ERR")};
+                let base64_text =
+                    general_purpose::STANDARD_NO_PAD.encode(req_text);
+                base64_text
+            })
+            .collect();
+
+        Ok(Some(ParamValue::Str(os_string(&results.join(";")))))
     }
 
     fn init_logger(

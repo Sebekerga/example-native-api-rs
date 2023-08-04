@@ -6,6 +6,7 @@ edition = "2021"
 [lib]
 crate-type = ["cdylib"]
 
+# from https://github.com/johnthagen/min-sized-rust
 [profile.release]
 opt-level = "z"   # Optimize for size.
 lto = true        # Enable Link Time Optimization
@@ -14,6 +15,7 @@ panic = "abort"   # Abort on panic
 strip = true      # Automatically strip symbols from the binary.
 
 [dependencies]
+base64 = "0.21.2"
 color-eyre = "0.6.2"
 log = "0.4.19"
 log4rs = "1.2.0"
