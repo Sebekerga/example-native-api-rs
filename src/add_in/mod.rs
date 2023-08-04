@@ -19,7 +19,7 @@ pub struct ComponentFuncDescription {
 }
 impl ComponentFuncDescription {
     pub fn new<const PARAMS_COUNT: usize>(
-        names: &'static [&'static str],
+        names: &'static [&'static str; 2],
         returns_val: bool,
         default_values: &'static [Option<ParamValue>; PARAMS_COUNT],
     ) -> Self {
