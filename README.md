@@ -1,6 +1,8 @@
 # Описание
 Пример внешней компоненты для **1С:Предприятие 8** по технологии **Native API** на языке **Rust**, изначально написанный   [пользователем **medigor**](https://github.com/medigor/example-native-api-rs), мною форкнут, т.к. мне не понравилась структура проекта и не доставало имплементации объекта соединения с базой (для отправления внешних и др.).
 
+Стараюсь всё реализовывать идиоматически, насколько хватает времени, желания и знаний, буду рад корректировкам :)
+
 ## Размер .dll
 Релизная сборка с оптимизациями на размер 
 | Использование библиотеки `ureq` | Без сжатия | Сжатие с помощью [UPX](https://upx.github.io/) |
@@ -15,6 +17,77 @@
 - Linux x64 - не тестировал.
 - Linux x32 - не тестировал.
 - MacOS - не тестировал.
+
+
+## Пример части кода, описывающего компоненту
+
+```rust
+impl MyAddInDescription {
+    pub fn new() -> Self {
+        Self {
+            name: &utf16_null!("MyAddIn"),          // имя класса в 1С
+            connection: Arc::new(None),
+            functions: Self::generate_func_list(),
+            props: Self::generate_prop_list(),
+
+            some_prop_container: 0,
+        }
+    }
+}
+
+impl MyAddInDescription {
+    pub fn generate_func_list() -> Vec<FunctionListElement> {
+        vec![
+            FunctionListElement {                           
+                description: ComponentFuncDescription::new::<0>( // количество аргументов
+                    &["Итерировать", "Iterate"],    // название свойства на русском и английском языках
+                    false,                          // возвращает значения
+                    &[],                            // значения по умолчанию, Option
+                ),
+                callback: Self::iterate,            // функция обработчик
+            },
+        ]
+    }
+
+    pub fn generate_prop_list() -> Vec<PropListElement> {
+        vec![PropListElement {
+            description: ComponentPropDescription {
+                names: &["Property", "Свойство"],   // название свойства на русском и английском языках
+                readable: true,                     // 1С может читать значение
+                writable: true,                     // 1С может записывать значение
+            },
+            get_callback: Some(Self::get_prop),     // функция обработчик чтения значения
+            set_callback: Some(Self::set_prop),     // функция обработчик записи значения
+        }]
+    }
+
+    fn iterate(
+        &mut self,
+        _params: &[ParamValue],
+    ) -> Result<Option<ParamValue>> {
+        if self.some_prop_container >= 105 {
+            return Err(eyre!("Prop is too big"));
+        }
+        self.some_prop_container += 1;
+        log::info!("Prop is now {}", self.some_prop_container);
+        Ok(None)
+    }
+
+    fn get_prop(&self) -> Option<ParamValue> {
+        Some(ParamValue::I32(self.some_prop_container))
+    }
+
+    fn set_prop(&mut self, value: &ParamValue) -> bool {
+        match value {
+            ParamValue::I32(val) => {
+                self.some_prop_container = *val;
+                true
+            }
+            _ => false,
+        }
+    }
+}
+```
 
 
 
