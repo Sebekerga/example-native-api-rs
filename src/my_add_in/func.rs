@@ -1,8 +1,6 @@
-use crate::add_in::{
-    AddIn, ComponentFuncDescription, ComponentPropDescription,
-};
+use super::MyAddInDescription;
+use crate::add_in::ComponentFuncDescription;
 use crate::ffi::{
-    connection::Connection,
     types::ParamValue,
     utils::{from_os_string, os_string},
 };
@@ -14,45 +12,18 @@ use log4rs::{
     encode::pattern::PatternEncoder,
     Config,
 };
-use std::{path::PathBuf, sync::Arc, thread, time::Duration};
-use utf16_lit::utf16_null;
+use std::{path::PathBuf, thread, time::Duration};
 
 pub struct FunctionListElement {
-    description: ComponentFuncDescription,
-    callback:
-        fn(&mut AddInDescription, &[ParamValue]) -> Result<Option<ParamValue>>,
+    pub description: ComponentFuncDescription,
+    pub callback: fn(
+        &mut MyAddInDescription,
+        &[ParamValue],
+    ) -> Result<Option<ParamValue>>,
 }
 
-pub struct PropListElement {
-    description: ComponentPropDescription,
-    get_callback: Option<fn(&AddInDescription) -> Option<ParamValue>>,
-    set_callback: Option<fn(&mut AddInDescription, &ParamValue) -> bool>,
-}
-
-pub struct AddInDescription {
-    name: &'static [u16],
-    connection: Arc<Option<&'static Connection>>,
-    log_handle: Option<log4rs::Handle>,
-
-    functions: Vec<FunctionListElement>,
-    props: Vec<PropListElement>,
-    some_prop_container: i32,
-}
-
-impl AddInDescription {
-    pub fn new() -> Self {
-        Self {
-            name: &utf16_null!("MyAddIn"),
-            connection: Arc::new(None),
-            log_handle: None,
-            functions: Self::generate_func_list(),
-            props: Self::generate_prop_list(),
-
-            some_prop_container: 0,
-        }
-    }
-
-    fn generate_func_list() -> Vec<FunctionListElement> {
+impl MyAddInDescription {
+    pub fn generate_func_list() -> Vec<FunctionListElement> {
         vec![
             FunctionListElement {
                 description: ComponentFuncDescription::new::<0>(
@@ -87,32 +58,6 @@ impl AddInDescription {
                 callback: Self::init_logger,
             },
         ]
-    }
-
-    fn generate_prop_list() -> Vec<PropListElement> {
-        vec![PropListElement {
-            description: ComponentPropDescription {
-                names: &["prop"],
-                readable: true,
-                writable: true,
-            },
-            get_callback: Some(Self::get_prop),
-            set_callback: Some(Self::set_prop),
-        }]
-    }
-
-    fn get_prop(&self) -> Option<ParamValue> {
-        Some(ParamValue::I32(self.some_prop_container))
-    }
-
-    fn set_prop(&mut self, value: &ParamValue) -> bool {
-        match value {
-            ParamValue::I32(val) => {
-                self.some_prop_container = *val;
-                true
-            }
-            _ => false,
-        }
     }
 
     fn iterate(
@@ -186,58 +131,5 @@ impl AddInDescription {
         self.log_handle = Some(log4rs::init_config(config)?);
         log::info!("Logger initialized");
         Ok(None)
-    }
-}
-
-impl AddIn for AddInDescription {
-    fn init(&mut self, interface: &'static Connection) -> bool {
-        interface.set_event_buffer_depth(10);
-        self.connection = Arc::new(Some(interface));
-        self.some_prop_container = 100;
-        true
-    }
-
-    fn add_in_name(&self) -> &'static [u16] {
-        self.name
-    }
-
-    fn call_function(
-        &mut self,
-        name: &str,
-        params: &[ParamValue],
-    ) -> Result<Option<ParamValue>> {
-        let func = self
-            .functions
-            .iter()
-            .find(|el| el.description.names.iter().any(|n| n == &name));
-
-        let Some(func) = func.map(|el| el.callback) else { return Err(eyre!("No function with such name")) };
-        func(self, params)
-    }
-
-    fn get_parameter(&self, name: &str) -> Option<ParamValue> {
-        let prop = self
-            .props
-            .iter()
-            .find(|el| el.description.names.iter().any(|n| n == &name));
-        let Some(Some(get)) = prop.map(|el| el.get_callback) else { return None };
-        get(self)
-    }
-
-    fn set_parameter(&mut self, name: &str, value: &ParamValue) -> bool {
-        let prop = self
-            .props
-            .iter()
-            .find(|el| el.description.names.iter().any(|n| n == &name));
-        let Some(Some(set)) = prop.map(|el| el.set_callback) else { return false };
-        set(self, value)
-    }
-
-    fn list_functions(&self) -> Vec<&ComponentFuncDescription> {
-        self.functions.iter().map(|el| &el.description).collect()
-    }
-
-    fn list_parameters(&self) -> Vec<&ComponentPropDescription> {
-        self.props.iter().map(|el| &el.description).collect()
     }
 }
