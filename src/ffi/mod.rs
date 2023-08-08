@@ -19,6 +19,7 @@ pub mod utils;
 
 #[repr(C)]
 #[derive(Debug)]
+#[allow(dead_code)]
 pub enum AttachType {
     NotIsolated = 1,
     Isolated,

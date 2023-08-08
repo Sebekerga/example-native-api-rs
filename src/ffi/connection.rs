@@ -2,6 +2,19 @@ use std::ffi::{c_long, c_ushort};
 
 use super::{types::TVariant, utils::os_string_nil};
 
+pub enum Error {
+    None = 1000,
+    Ordinary = 1001,
+    Attention = 1002,
+    Important = 1003,
+    VeryImportant = 1004,
+    Info = 1005,
+    Fail = 1006,
+    DialogAttention = 1007,
+    DialogInfo = 1008,
+    DialogFail = 1009,
+}
+
 #[repr(C)]
 struct ConnectionVTable {
     dtor: usize,
@@ -47,7 +60,7 @@ pub struct Connection {
 impl Connection {
     pub fn add_error(
         &self,
-        code: c_ushort,
+        code: Error,
         source: &str,
         description: &str,
     ) -> bool {
@@ -58,7 +71,13 @@ impl Connection {
                 .encode_utf16()
                 .collect::<Vec<u16>>()
                 .as_mut_ptr();
-            (self.vptr1.add_error)(self, code, source_ptr, description_ptr, 0)
+            (self.vptr1.add_error)(
+                self,
+                code as u16,
+                source_ptr,
+                description_ptr,
+                0,
+            )
         }
     }
 

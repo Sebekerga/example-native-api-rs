@@ -1,5 +1,6 @@
 use super::MyAddInDescription;
 use crate::add_in::ComponentFuncDescription;
+use crate::ffi::connection::Error;
 use crate::ffi::utils::os_string;
 use crate::ffi::{types::ParamValue, utils::from_os_string};
 use base64::{engine::general_purpose, Engine as _};
@@ -100,6 +101,7 @@ impl MyAddInDescription {
             log::info!("Timer ended");
             if let Some(connection) = &*connection {
                 connection.external_event(&name, "TimerEnd", "OK");
+                connection.add_error(Error::DialogInfo, "Timer", "Time's up");
             }
         });
 
