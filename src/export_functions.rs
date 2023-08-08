@@ -4,11 +4,7 @@ use std::{
 };
 use utf16_lit::utf16_null;
 
-use crate::{
-    add_in::AddInContainer,
-    ffi::{create_component, destroy_component, AttachType},
-    init_my_add_in,
-};
+use crate::ffi::{destroy_component, AttachType};
 
 pub static mut PLATFORM_CAPABILITIES: AtomicI32 = AtomicI32::new(-1);
 
@@ -18,13 +14,7 @@ pub unsafe extern "C" fn GetClassObject(
     name: *const u16,
     component: *mut *mut c_void,
 ) -> c_long {
-    match *name as u8 {
-        b'1' => {
-            let my_add_in_container = AddInContainer::new(init_my_add_in());
-            create_component(component, my_add_in_container)
-        }
-        _ => 0,
-    }
+    0
 }
 
 #[allow(non_snake_case)]

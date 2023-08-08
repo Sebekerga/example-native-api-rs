@@ -3,7 +3,7 @@ use std::{
     ptr,
 };
 
-use crate::add_in::AddInWrapper;
+use crate::interface::AddInWrapper;
 
 use self::{
     init_base::InitDoneBaseVTable, lang_extender::LanguageExtenderBaseVTable,

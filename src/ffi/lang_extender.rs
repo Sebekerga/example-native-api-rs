@@ -4,7 +4,7 @@ use std::{
     slice::from_raw_parts,
 };
 
-use crate::add_in::AddInWrapper;
+use crate::interface::AddInWrapper;
 
 use super::{
     get_str,
