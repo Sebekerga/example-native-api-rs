@@ -2,6 +2,9 @@
 name = "native_api_1c_core"
 version = "0.9.0"
 edition = "2021"
+repository = "https://github.com/Sebekerga/native_api_1c_core"
+license = "MIT"
+description = "Core library for Native API 1C"
 
 [dependencies]
 utf16_lit = "2.0"
