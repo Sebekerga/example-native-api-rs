@@ -45,8 +45,8 @@ impl From<chrono::DateTime<chrono::FixedOffset>> for Tm {
     }
 }
 
-impl From<Tm> for chrono::DateTime<chrono::FixedOffset> {
-    fn from(tm: Tm) -> Self {
+impl From<&Tm> for chrono::DateTime<chrono::FixedOffset> {
+    fn from(tm: &Tm) -> Self {
         let Some(naive_date) = chrono::NaiveDate::from_ymd_opt(
             tm.year,
             tm.mon as u32,
