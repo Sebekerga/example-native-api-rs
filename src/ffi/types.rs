@@ -39,7 +39,9 @@ impl From<chrono::DateTime<chrono::FixedOffset>> for Tm {
             wday: dt.weekday().num_days_from_sunday() as c_int,
             yday: dt.ordinal() as c_int,
             isdst: dt.timestamp() as c_int,
+            #[cfg(target_family = "unix")]
             gmtoff: dt.offset().fix().local_minus_utc() as std::ffi::c_long,
+            #[cfg(target_family = "unix")]
             zone: dt.offset().to_string().into_bytes()[0] as std::ffi::c_char,
         }
     }
@@ -61,7 +63,12 @@ impl From<&Tm> for chrono::DateTime<chrono::FixedOffset> {
         ) else {
             return chrono::DateTime::default();
         };
+        #[cfg(target_family = "unix")]
         let Some(offset) = chrono::FixedOffset::east_opt(tm.gmtoff as i32) else {
+            return chrono::DateTime::default();
+        };
+        #[cfg(target_family = "windows")]
+        let Some(offset) = chrono::FixedOffset::east_opt(0) else {
             return chrono::DateTime::default();
         };
         chrono::DateTime::from_utc(
@@ -87,7 +94,12 @@ impl From<Tm> for chrono::DateTime<chrono::FixedOffset> {
         ) else {
             return chrono::DateTime::default();
         };
+        #[cfg(target_family = "unix")]
         let Some(offset) = chrono::FixedOffset::east_opt(tm.gmtoff as i32) else {
+            return chrono::DateTime::default();
+        };
+        #[cfg(target_family = "windows")]
+        let Some(offset) = chrono::FixedOffset::east_opt(0) else {
             return chrono::DateTime::default();
         };
         chrono::DateTime::from_utc(
