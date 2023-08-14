@@ -4,6 +4,8 @@ use std::{
     slice::{from_raw_parts, from_raw_parts_mut},
 };
 
+use chrono::{Datelike, Offset, Timelike};
+
 use super::memory_manager::MemoryManager;
 
 #[repr(C)]
@@ -23,6 +25,50 @@ pub struct Tm {
     pub gmtoff: std::ffi::c_long, // seconds east of UTC
     #[cfg(target_family = "unix")]
     pub zone: std::ffi::c_char, // timezone abbreviation
+}
+
+impl From<chrono::DateTime<chrono::FixedOffset>> for Tm {
+    fn from(dt: chrono::DateTime<chrono::FixedOffset>) -> Self {
+        Self {
+            sec: dt.second() as c_int,
+            min: dt.minute() as c_int,
+            hour: dt.hour() as c_int,
+            mday: dt.day() as c_int,
+            mon: dt.month() as c_int,
+            year: dt.year() as c_int,
+            wday: dt.weekday().num_days_from_sunday() as c_int,
+            yday: dt.ordinal() as c_int,
+            isdst: dt.timestamp() as c_int,
+            gmtoff: dt.offset().fix().local_minus_utc() as std::ffi::c_long,
+            zone: dt.offset().to_string().into_bytes()[0] as std::ffi::c_char,
+        }
+    }
+}
+
+impl From<Tm> for chrono::DateTime<chrono::FixedOffset> {
+    fn from(tm: Tm) -> Self {
+        let Some(naive_date) = chrono::NaiveDate::from_ymd_opt(
+            tm.year,
+            tm.mon as u32,
+            tm.mday as u32,
+        ) else {
+            return chrono::DateTime::default();
+        };
+        let Some(naive_time) = chrono::NaiveTime::from_hms_opt(
+            tm.hour as u32,
+            tm.min as u32,
+            tm.sec as u32,
+        ) else {
+            return chrono::DateTime::default();
+        };
+        let Some(offset) = chrono::FixedOffset::east_opt(tm.gmtoff as i32) else {
+            return chrono::DateTime::default();
+        };
+        chrono::DateTime::from_utc(
+            chrono::NaiveDateTime::new(naive_date, naive_time),
+            offset,
+        )
+    }
 }
 
 pub struct ReturnValue<'a> {
