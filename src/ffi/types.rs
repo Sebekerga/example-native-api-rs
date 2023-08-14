@@ -71,6 +71,32 @@ impl From<&Tm> for chrono::DateTime<chrono::FixedOffset> {
     }
 }
 
+impl From<Tm> for chrono::DateTime<chrono::FixedOffset> {
+    fn from(tm: Tm) -> Self {
+        let Some(naive_date) = chrono::NaiveDate::from_ymd_opt(
+            tm.year,
+            tm.mon as u32,
+            tm.mday as u32,
+        ) else {
+            return chrono::DateTime::default();
+        };
+        let Some(naive_time) = chrono::NaiveTime::from_hms_opt(
+            tm.hour as u32,
+            tm.min as u32,
+            tm.sec as u32,
+        ) else {
+            return chrono::DateTime::default();
+        };
+        let Some(offset) = chrono::FixedOffset::east_opt(tm.gmtoff as i32) else {
+            return chrono::DateTime::default();
+        };
+        chrono::DateTime::from_utc(
+            chrono::NaiveDateTime::new(naive_date, naive_time),
+            offset,
+        )
+    }
+}
+
 pub struct ReturnValue<'a> {
     pub mem: &'a MemoryManager,
     pub variant: &'a mut TVariant,
