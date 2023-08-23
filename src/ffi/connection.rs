@@ -65,17 +65,13 @@ impl Connection {
         description: &str,
     ) -> bool {
         unsafe {
-            let source_ptr =
-                source.encode_utf16().collect::<Vec<u16>>().as_mut_ptr();
-            let description_ptr = description
-                .encode_utf16()
-                .collect::<Vec<u16>>()
-                .as_mut_ptr();
+            let source_wstr = os_string_nil(source);
+            let description_wstr = os_string_nil(description);
             (self.vptr1.add_error)(
                 self,
                 code as u16,
-                source_ptr,
-                description_ptr,
+                source_wstr.as_ptr(),
+                description_wstr.as_ptr(),
                 0,
             )
         }
@@ -83,10 +79,15 @@ impl Connection {
 
     pub fn external_event(&self, caller: &str, name: &str, data: &str) -> bool {
         unsafe {
-            let caller_ptr = os_string_nil(caller).as_mut_ptr();
-            let name_ptr = os_string_nil(name).as_mut_ptr();
-            let data_ptr = os_string_nil(data).as_mut_ptr();
-            (self.vptr1.external_event)(self, caller_ptr, name_ptr, data_ptr)
+            let mut caller_wstr = os_string_nil(caller);
+            let mut name_wstr = os_string_nil(name);
+            let mut data_wstr = os_string_nil(data);
+            (self.vptr1.external_event)(
+                self,
+                caller_wstr.as_mut_ptr(),
+                name_wstr.as_mut_ptr(),
+                data_wstr.as_mut_ptr(),
+            )
         }
     }
 
