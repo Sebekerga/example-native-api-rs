@@ -26,12 +26,6 @@ pub fn os_string_nil(s: &str) -> Vec<u16> {
         .collect()
 }
 
-#[cfg(target_family = "windows")]
-pub fn os_string(s: &str) -> Vec<u16> {
-    let os_str = std::ffi::OsStr::new(s);
-    std::os::windows::prelude::OsStrExt::encode_wide(os_str).collect()
-}
-
 pub fn from_os_string(s: &[u16]) -> String {
     String::from_utf16_lossy(s)
         .trim_end_matches(char::from(0))
