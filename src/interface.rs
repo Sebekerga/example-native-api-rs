@@ -1,6 +1,6 @@
 use crate::ffi::{
     connection::Connection,
-    types::{ParamValue, ReturnValue},
+    provided_types::{ParamValue, ReturnValue},
 };
 
 pub trait AddInWrapper {

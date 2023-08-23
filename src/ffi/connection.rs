@@ -1,6 +1,6 @@
 use std::ffi::{c_long, c_ushort};
 
-use super::{types::TVariant, utils::os_string_nil};
+use super::{provided_types::TVariant, string_utils::os_string_nil};
 
 pub enum Error {
     None = 1000,

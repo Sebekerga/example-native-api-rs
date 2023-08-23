@@ -8,7 +8,7 @@ use crate::interface::AddInWrapper;
 
 use super::{
     get_str,
-    types::{ParamValue, ReturnValue, TVariant},
+    provided_types::{ParamValue, ReturnValue, TVariant},
     This,
 };
 

@@ -7,15 +7,15 @@ use crate::interface::AddInWrapper;
 
 use self::{
     init_base::InitDoneBaseVTable, lang_extender::LanguageExtenderBaseVTable,
-    memory_manager::MemoryManager, utils::get_str,
+    memory_manager::MemoryManager, string_utils::get_str,
 };
 
 pub mod connection;
 pub mod init_base;
 pub mod lang_extender;
 pub mod memory_manager;
-pub mod types;
-pub mod utils;
+pub mod provided_types;
+pub mod string_utils;
 
 #[repr(C)]
 #[derive(Debug)]
