@@ -5,6 +5,8 @@ use std::slice::from_raw_parts;
 /// * `s` - pointer to UTF-16 string
 /// # Returns
 /// `&[u16]` - slice of UTF-16 characters
+/// # Safety
+/// This function is unsafe because it takes a raw pointer and dereferences it
 pub unsafe fn get_str<'a>(s: *const u16) -> &'a [u16] {
     unsafe fn strlen(s: *const u16) -> usize {
         let mut i = 0;

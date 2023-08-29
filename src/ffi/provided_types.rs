@@ -1,9 +1,5 @@
 use chrono::{Datelike, Offset, Timelike};
-use std::{
-    ffi::c_int,
-    ptr,
-    slice::{from_raw_parts, from_raw_parts_mut},
-};
+use std::{ffi::c_int, ptr, slice::from_raw_parts};
 
 use super::memory_manager::MemoryManager;
 
