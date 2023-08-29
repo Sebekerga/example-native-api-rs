@@ -1,3 +1,6 @@
+//! FFI bindings for 1C:Enterprise Native API are divided between several
+//! submodules according to what C++ class they originate from
+//!
 use std::{
     ffi::{c_long, c_void},
     ptr,
@@ -10,19 +13,29 @@ use self::{
     memory_manager::MemoryManager, string_utils::get_str,
 };
 
+/// Implementation of `Connection` - replacement for `IAddInDefBase`
 pub mod connection;
+/// Implementation of `InitDone` - replacement for `IInitDoneBase`
 pub mod init_base;
+/// Implementation of `LanguageExtender` - replacement for `ILanguageExtenderBase`
 pub mod lang_extender;
+/// Implementation of `MemoryManager` - replacement for `IMemoryManager`
 pub mod memory_manager;
+/// Implementations of types, provided by Native API for easy of use in Rust
 pub mod provided_types;
+/// Functions to convert between Rust and 1C strings
 pub mod string_utils;
 
+/// Scheme of attaching to 1C platform process
 #[repr(C)]
 #[derive(Debug)]
 #[allow(dead_code)]
 pub enum AttachType {
+    /// Attach to 1C platform process
     NotIsolated = 1,
+    /// Attach to separate process
     Isolated,
+    /// Any of the above
     Any,
 }
 
