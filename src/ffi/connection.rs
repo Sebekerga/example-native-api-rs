@@ -5,27 +5,26 @@ use super::{provided_types::TVariant, string_utils::os_string_nil};
 /// Message codes that can be used in `Connection::add_error` method
 /// to specify message type.
 /// See [1C documentation](https://its.1c.ru/db/content/metod8dev/src/developers/platform/i8103221.htm#_com_infomessage)
-/// # Variants
-/// * `None` - error without icon
-/// * `Ordinary` - error with ">" icon
-/// * `Attention` - error with "!" icon
-/// * `Important` - error with "!!" icon
-/// * `VeryImportant` - error with "!!!" icon
-/// * `Info` - error with "i" icon
-/// * `Fail` - error with "err" icon
-/// * `DialogAttention` - shows a dialog with "MB_ICONEXCLAMATION" icon
-/// * `DialogInfo` - shows a dialog with "MB_ICONINFORMATION" icon
-/// * `DialogFail` - shows a dialog with "MB_ICONERROR" icon
 pub enum MessageCode {
+    /// Error without icon
     None = 1000,
+    /// Error with ">" icon
     Ordinary = 1001,
+    /// Error with "!" icon
     Attention = 1002,
+    /// Error with "!!" icon
     Important = 1003,
+    /// Error with "!!!" icon
     VeryImportant = 1004,
+    /// Error with "i" icon
     Info = 1005,
+    /// Error with "err" icon
     Fail = 1006,
+    /// Shows a dialog with "MB_ICONEXCLAMATION" icon
     DialogAttention = 1007,
+    /// Shows a dialog with "MB_ICONINFORMATION" icon
     DialogInfo = 1008,
+    /// Shows a dialog with "MB_ICONERROR" icon
     DialogFail = 1009,
 }
 
