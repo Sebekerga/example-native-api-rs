@@ -2,7 +2,21 @@ use std::ffi::{c_long, c_ushort};
 
 use super::{provided_types::TVariant, string_utils::os_string_nil};
 
-pub enum Error {
+/// Message codes that can be used in `Connection::add_error` method
+/// to specify message type.
+/// See [1C documentation](https://its.1c.ru/db/content/metod8dev/src/developers/platform/i8103221.htm#_com_infomessage)
+/// # Variants
+/// * `None` - error without icon
+/// * `Ordinary` - error with ">" icon
+/// * `Attention` - error with "!" icon
+/// * `Important` - error with "!!" icon
+/// * `VeryImportant` - error with "!!!" icon
+/// * `Info` - error with "i" icon
+/// * `Fail` - error with "err" icon
+/// * `DialogAttention` - shows a dialog with "MB_ICONEXCLAMATION" icon
+/// * `DialogInfo` - shows a dialog with "MB_ICONINFORMATION" icon
+/// * `DialogFail` - shows a dialog with "MB_ICONERROR" icon
+pub enum MessageCode {
     None = 1000,
     Ordinary = 1001,
     Attention = 1002,
@@ -15,6 +29,9 @@ pub enum Error {
     DialogFail = 1009,
 }
 
+/// VTable for Connection object, derived from Native API interface. See original
+/// C++ implementation in [example project](https://its.1c.ru/db/files/1CITS/EXE/VNCOMPS/VNCOMPS.zip)
+/// from 1C documentation
 #[repr(C)]
 struct ConnectionVTable {
     dtor: usize,
@@ -52,15 +69,23 @@ struct ConnectionVTable {
     reset_status_line: unsafe extern "system" fn(&Connection),
 }
 
+/// Connection object, used to communicate with 1C platform after the AddIn is loaded
 #[repr(C)]
 pub struct Connection {
     vptr1: &'static ConnectionVTable,
 }
 
 impl Connection {
+    /// Equivalent to `AddError` from Native API interface and is used to add an error to the 1C platform
+    /// # Arguments
+    /// * `code` - message code, see [MessageCode](enum.MessageCode)
+    /// * `source` - source of the error
+    /// * `description` - description of the error
+    /// # Returns
+    /// `bool` - operation success status
     pub fn add_error(
         &self,
-        code: Error,
+        code: MessageCode,
         source: &str,
         description: &str,
     ) -> bool {
@@ -77,6 +102,13 @@ impl Connection {
         }
     }
 
+    /// Equivalent to `ExternalEvent` from Native API interface and is used to send an external event to the 1C platform
+    /// # Arguments
+    /// * `caller` - name of the event caller
+    /// * `name` - name of the event
+    /// * `data` - data of the event
+    /// # Returns
+    /// `bool` - operation success status
     pub fn external_event(&self, caller: &str, name: &str, data: &str) -> bool {
         unsafe {
             let mut caller_wstr = os_string_nil(caller);
@@ -91,10 +123,16 @@ impl Connection {
         }
     }
 
+    /// Equivalent to `SetEventBufferDepth` from Native API interface
+    /// # Arguments
+    /// * `depth` - new event buffer depth
     pub fn set_event_buffer_depth(&self, depth: c_long) -> bool {
         unsafe { (self.vptr1.set_event_buffer_depth)(self, depth) }
     }
 
+    /// Equivalent to `GetEventBufferDepth` from Native API interface
+    /// # Returns
+    /// `c_long` - current event buffer depth
     pub fn get_event_buffer_depth(&self) -> c_long {
         unsafe { (self.vptr1.get_event_buffer_depth)(self) }
     }
