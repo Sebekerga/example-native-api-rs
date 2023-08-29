@@ -1,3 +1,4 @@
+//!
 //! FFI bindings for 1C:Enterprise Native API are divided between several
 //! submodules according to what C++ class they originate from
 //!
