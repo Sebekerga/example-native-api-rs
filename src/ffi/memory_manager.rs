@@ -59,4 +59,10 @@ impl MemoryManager {
             }
         }
     }
+
+    pub fn free_memory(&self, ptr: &mut *mut c_void) {
+        unsafe {
+            (self.vptr.free_memory)(self, ptr);
+        }
+    }
 }

@@ -1,6 +1,6 @@
 use chrono::{Datelike, Offset, Timelike};
 use std::{
-    ffi::c_int,
+    ffi::{c_int, c_void},
     ptr,
     slice::{from_raw_parts, from_raw_parts_mut},
 };
@@ -121,6 +121,38 @@ impl From<Tm> for chrono::DateTime<chrono::FixedOffset> {
     }
 }
 
+#[cfg(target_family = "unix")]
+impl PartialEq for Tm {
+    fn eq(&self, other: &Self) -> bool {
+        self.sec == other.sec
+            && self.min == other.min
+            && self.hour == other.hour
+            && self.mday == other.mday
+            && self.mon == other.mon
+            && self.year == other.year
+            && self.wday == other.wday
+            && self.yday == other.yday
+            && self.isdst == other.isdst
+            && self.gmtoff == other.gmtoff
+            && self.zone == other.zone
+    }
+}
+
+#[cfg(target_family = "windows")]
+impl PartialEq for Tm {
+    fn eq(&self, other: &Self) -> bool {
+        self.sec == other.sec
+            && self.min == other.min
+            && self.hour == other.hour
+            && self.mday == other.mday
+            && self.mon == other.mon
+            && self.year == other.year
+            && self.wday == other.wday
+            && self.yday == other.yday
+            && self.isdst == other.isdst
+    }
+}
+
 /// Type representing 1C variant values
 /// # Fields
 /// `mem` - pointer to the MemoryManager object
@@ -197,6 +229,7 @@ impl<'a> ReturnValue<'a> {
 }
 
 /// Represents 1C variant values for parameters
+#[derive(Clone)]
 pub enum ParamValue {
     /// Empty value
     Empty,
@@ -212,6 +245,21 @@ pub enum ParamValue {
     Str(Vec<u16>),
     /// Blob value
     Blob(Vec<u8>),
+}
+
+impl<'a> PartialEq for ParamValue {
+    fn eq(&self, other: &Self) -> bool {
+        match (self, other) {
+            (Self::Empty, Self::Empty) => true,
+            (Self::Bool(a), Self::Bool(b)) => a == b,
+            (Self::I32(a), Self::I32(b)) => a == b,
+            (Self::F64(a), Self::F64(b)) => a == b,
+            (Self::Date(a), Self::Date(b)) => a == b,
+            (Self::Str(a), Self::Str(b)) => a == b,
+            (Self::Blob(a), Self::Blob(b)) => a == b,
+            _ => false,
+        }
+    }
 }
 
 impl<'a> From<&'a TVariant> for ParamValue {
@@ -245,7 +293,7 @@ impl<'a> From<&'a TVariant> for ParamValue {
 
 #[repr(u16)]
 #[allow(dead_code)]
-enum VariantType {
+pub enum VariantType {
     Empty = 0,
     Null,
     Int16,     //int16_t
@@ -281,7 +329,7 @@ enum VariantType {
 /// * `len` - length of the data
 #[repr(C)]
 #[derive(Clone, Copy)]
-struct DataStr {
+pub struct DataStr {
     pub ptr: *mut u16,
     pub len: u32,
 }
@@ -292,7 +340,7 @@ struct DataStr {
 /// * `len` - length of the data
 #[repr(C)]
 #[derive(Clone, Copy)]
-struct DataBlob {
+pub struct DataBlob {
     pub ptr: *mut u8,
     pub len: u32,
 }
@@ -306,7 +354,7 @@ struct DataBlob {
 /// * `data_str` - UTF-16 string value
 /// * `data_blob` - blob value
 #[repr(C)]
-union VariantValue {
+pub union VariantValue {
     pub bool: bool,
     pub i32: i32,
     pub f64: f64,
@@ -321,4 +369,66 @@ pub struct TVariant {
     value: VariantValue,
     elements: u32, //Dimension for an one-dimensional array in pvarVal
     vt: VariantType,
+}
+
+impl TVariant {
+    pub unsafe fn update_to_str(
+        &mut self,
+        mem_mngr: &MemoryManager,
+        v: &[u16],
+    ) -> Result<u32, ()> {
+        let mut old_pointer = self.value.data_str.ptr;
+
+        let Some(ptr) = mem_mngr.alloc_str(v.len()) else { return Err(()); };
+        ptr::copy_nonoverlapping(v.as_ptr(), ptr.as_ptr(), v.len());
+
+        self.value.data_str.ptr = ptr.as_ptr();
+        self.value.data_str.len = v.len() as u32;
+
+        mem_mngr.free_memory(&mut old_pointer.cast::<c_void>());
+
+        self.vt = VariantType::WStr;
+
+        Ok(self.value.data_str.len)
+    }
+
+    pub unsafe fn update_to_blob(
+        &mut self,
+        mem_mngr: &MemoryManager,
+        v: &[u8],
+    ) -> Result<u32, ()> {
+        let mut old_pointer = self.value.data_blob.ptr;
+
+        let Some(ptr) = mem_mngr.alloc_blob(v.len()) else { return Err(()); };
+        ptr::copy_nonoverlapping(v.as_ptr(), ptr.as_ptr(), v.len());
+
+        self.value.data_blob.ptr = ptr.as_ptr();
+        self.value.data_blob.len = v.len() as u32;
+
+        mem_mngr.free_memory(&mut old_pointer.cast::<c_void>());
+
+        self.vt = VariantType::Blob;
+
+        Ok(self.value.data_blob.len)
+    }
+
+    pub fn update_to_bool(&mut self, v: bool) {
+        self.value.bool = v;
+        self.vt = VariantType::Bool;
+    }
+
+    pub fn update_to_i32(&mut self, v: i32) {
+        self.value.i32 = v;
+        self.vt = VariantType::Int32;
+    }
+
+    pub fn update_to_f64(&mut self, v: f64) {
+        self.value.f64 = v;
+        self.vt = VariantType::Double;
+    }
+
+    pub fn update_to_date(&mut self, v: Tm) {
+        self.value.tm = v;
+        self.vt = VariantType::Time;
+    }
 }

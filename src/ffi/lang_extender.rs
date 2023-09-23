@@ -1,7 +1,7 @@
 use std::{
     ffi::c_long,
     ptr::{self},
-    slice::from_raw_parts,
+    slice::from_raw_parts_mut,
 };
 
 use crate::interface::AddInWrapper;
@@ -56,14 +56,14 @@ pub struct LanguageExtenderBaseVTable<T: AddInWrapper> {
     call_as_proc: unsafe extern "system" fn(
         &mut This<1, T>,
         c_long,
-        *const TVariant,
+        *mut TVariant,
         c_long,
     ) -> bool,
     call_as_func: unsafe extern "system" fn(
         &mut This<1, T>,
         c_long,
         &mut TVariant,
-        *const TVariant,
+        *mut TVariant,
         c_long,
     ) -> bool,
 }
@@ -264,48 +264,114 @@ unsafe extern "system" fn has_ret_val<T: AddInWrapper>(
 unsafe extern "system" fn call_as_proc<T: AddInWrapper>(
     this: &mut This<1, T>,
     method_num: c_long,
-    params: *const TVariant,
+    params: *mut TVariant,
     size_array: c_long,
 ) -> bool {
     let component = this.get_component();
-    let param_values = from_raw_parts(params, size_array as usize)
+    let Some(mem_mngr) = component.memory else { return false; };
+
+    let parameters_raw = from_raw_parts_mut(params, size_array as usize);
+    let mut parameters_values = parameters_raw
         .iter()
         .map(ParamValue::from)
         .collect::<Vec<ParamValue>>();
+    let parameters_values_buf = parameters_values.clone();
 
-    component
+    let call_result = component
         .addin
-        .call_as_proc(method_num as usize, param_values.as_slice())
+        .call_as_proc(method_num as usize, &mut parameters_values);
+    if !call_result {
+        return false;
+    }
+    if parameters_values.len() != parameters_values_buf.len() {
+        return false;
+    }
+
+    for i in 0..parameters_values.len() {
+        let raw_param = &mut parameters_raw[i];
+        if parameters_values_buf[i] == parameters_values[i] {
+            continue;
+        }
+        match &parameters_values[i] {
+            ParamValue::Str(v) => {
+                let Ok(_) = raw_param.update_to_str(mem_mngr, v) else { return false; };
+            }
+            ParamValue::Blob(v) => {
+                let Ok(_) = raw_param.update_to_blob(mem_mngr, v) else { return false; };
+            }
+            ParamValue::Bool(v) => raw_param.update_to_bool(*v),
+            ParamValue::I32(v) => raw_param.update_to_i32(*v),
+            ParamValue::F64(v) => raw_param.update_to_f64(*v),
+            ParamValue::Date(v) => raw_param.update_to_date(*v),
+            ParamValue::Empty => {}
+        }
+    }
+
+    true
 }
 
 unsafe extern "system" fn call_as_func<T: AddInWrapper>(
     this: &mut This<1, T>,
     method_num: c_long,
     ret_value: &mut TVariant,
-    params: *const TVariant,
+    params: *mut TVariant,
     size_array: c_long,
 ) -> bool {
     let component = this.get_component();
-    let Some(mem) = component.memory else {
-        return false;
-    };
+    let Some(mem_mngr) = component.memory else { return false; };
 
     let mut result = true;
     let return_value = ReturnValue {
-        mem,
+        mem: mem_mngr,
         variant: ret_value,
         result: &mut result,
     };
 
-    let param_values = from_raw_parts(params, size_array as usize)
+    let parameters_raw = from_raw_parts_mut(params, size_array as usize);
+    let mut parameters_values = parameters_raw
         .iter()
         .map(ParamValue::from)
         .collect::<Vec<ParamValue>>();
+    let parameters_values_buf = parameters_values.clone();
 
-    component.addin.call_as_func(
+    let call_result = component.addin.call_as_func(
         method_num as usize,
-        param_values.as_slice(),
+        &mut parameters_values,
         return_value,
+    );
+    if !call_result {
+        return false;
+    }
+    if !result {
+        return false;
+    }
+    if parameters_values.len() != parameters_values_buf.len() {
+        return false;
+    }
+
+    for i in 0..parameters_values.len() {
+        let raw_param = &mut parameters_raw[i];
+        if parameters_values_buf[i] == parameters_values[i] {
+            continue;
+        }
+        match &parameters_values[i] {
+            ParamValue::Str(v) => {
+                let Ok(_) = raw_param.update_to_str(mem_mngr, v) else { return false; };
+            }
+            ParamValue::Blob(v) => {
+                let Ok(_) = raw_param.update_to_blob(mem_mngr, v) else { return false; };
+            }
+            ParamValue::Bool(v) => raw_param.update_to_bool(*v),
+            ParamValue::I32(v) => raw_param.update_to_i32(*v),
+            ParamValue::F64(v) => raw_param.update_to_f64(*v),
+            ParamValue::Date(v) => raw_param.update_to_date(*v),
+            ParamValue::Empty => {}
+        }
+    }
+
+    true
+}
+
     ) && result
 }
 
