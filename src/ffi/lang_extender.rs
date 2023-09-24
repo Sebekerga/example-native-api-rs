@@ -372,11 +372,8 @@ unsafe extern "system" fn call_as_func<T: AddInWrapper>(
     true
 }
 
-    ) && result
-}
-
-impl<T: AddInWrapper> LanguageExtenderBaseVTable<T> {
-    pub fn new() -> Self {
+impl<T: AddInWrapper> Default for LanguageExtenderBaseVTable<T> {
+    fn default() -> Self {
         Self {
             dtor: 0,
             #[cfg(target_family = "unix")]

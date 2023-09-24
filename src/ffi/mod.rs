@@ -111,7 +111,7 @@ pub unsafe fn create_component<T: AddInWrapper>(
     addin: T,
 ) -> c_long {
     let vptr1 = Box::new(InitDoneBaseVTable::new());
-    let vptr2 = Box::new(LanguageExtenderBaseVTable::new());
+    let vptr2 = Box::new(LanguageExtenderBaseVTable::default());
     let vptr3 = Box::new(LocaleBaseVTable {
         dtor: 0,
         #[cfg(target_family = "unix")]
