@@ -1,41 +1,7 @@
-# Описание
-Пример внешней компоненты для **1С:Предприятие 8** по технологии **Native API** на языке **Rust**, изначально написанный   [пользователем **medigor**](https://github.com/medigor/example-native-api-rs), мною форкнут, т.к. мне не понравилась структура проекта и не доставало имплементации объекта соединения с базой (для отправления внешних и др.).
+This is a fork of [medigor/example-native-api-rs](https://github.com/medigor/example-native-api-rs) that is made to be a core crate for 1C:Enterprise 8 Native API development. As of this moment, crate is tested on Linux and Windows. It should work on MacOS as well, but it is not tested. 
 
-Данный модуль содержит только описания функции и типов, необходимых для реализации компоненты, для 
+It implements FFI for Native API components and provides a set of types and `AddInWrapper` trait that can be used to implement 1C:Enterprise 8 Native API components in Rust. While it can be used as a standalone crate, it is intended to be used as a dependency for [native_api_1c](https://github.com/sebekerga/native_api_1c) crate.
 
-Стараюсь всё реализовывать идиоматически, насколько хватает времени, желания и знаний, буду рад корректировкам :)
+>_For FFI implementation, see [original repository](https://github.com/medigor/example-native-api-rs) or [this issue discussion](https://github.com/Sebekerga/native_api_1c/issues/2)_
 
-## Размер .dll
-Релизная сборка с оптимизациями на размер, примерные размеры 
-| Использование библиотеки `ureq` | Без сжатия | Сжатие с помощью [UPX](https://upx.github.io/) |
-| ------------------------------- | ---------- | ---------------------------------------------- |
-| Нет                             | 243200 B   | 115200 B                                       |
-| Да                              | 1379328 B  | 738816 B                                       |
-
-
-## Поддержка платформ
-- Windows x64 - msvc работает, gnu работает через раз, нужно пробовать
-- Windows x32 - msvc работает, gnu работает через раз, нужно пробовать
-- Linux x64 - не тестировал.
-- Linux x32 - не тестировал.
-- MacOS - не тестировал.
-
-#### Другие ресурсы
-* [Документция на ИТС](https://its.1c.ru/db/metod8dev#content:3221:hdoc)
-* [Шаблон компоненты на C++ от Infactum](https://github.com/Infactum/addin-template)
-
->## Далее сказанное [изначальным автором](https://github.com/medigor/example-native-api-rs)
->## Преимущества по сравнению с компонентой на C++
->* Преимущества самого языка *Rust* и его экосистемы (более современный и безопасный язык, удобный пакетный менеджер)
->* Для Windows не требуется msvc (напомню, что организации должны иметь лицензию)
->* Собирается полностью с использованием свободных инструментов
->* На linux можно собирать для windows, соответственно удобно использовать в CI контейнеры linux
->
->## Обзор
->Компоненты по технологии *Native API* предполагают разработку на языке *C++*, т.к. компонента должна принимать и возвращать указатели на виртуальные классы *C++*. Компонента для windows должна собираться только компилятором msvc, а для linux и macos подойдет gcc/clang.
->Как известно, взаимодействие *Rust* с *C++* из коробки не поддерживается. 
->
->Одним из вариантов было использовать [cxx](https://github.com/dtolnay/cxx) или подобные библиотеки. Это также бы потребовало использовать msvc.
->
->Другой вариант - вручную реализовать виртуальные таблицы, именно этот вариант и реализован.
-На [godbolt](https://godbolt.org/z/KM3jaWMWs) можно посмотреть, как выглядят виртуальные таблицы для разных компиляторов. Виртуальные таблицы *msvc* отличаются от *gcc*/*clang*, при этом *gcc* и *clang* используют одинаковое ABI. Виртуальные таблицы реализованы в объеме достаточном для создания компоненты.
+Aside from some features (especially on Connection interface) not yet implemented, this crate should cover most important of the Native API functionality.
