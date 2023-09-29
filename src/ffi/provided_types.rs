@@ -5,7 +5,7 @@ use std::{
     slice::{from_raw_parts, from_raw_parts_mut},
 };
 
-use super::memory_manager::MemoryManager;
+use super::memory_manager::{AllocationError, MemoryManager};
 
 /// Type representing 1C date and time values
 /// # Fields
@@ -197,7 +197,7 @@ impl<'a> ReturnValue<'a> {
 
     /// Sets the value of the ReturnValue object to UTF-16 `&[u16]`
     pub fn set_str(self, val: &[u16]) {
-        let Some(ptr) = self.mem.alloc_str(val.len()) else {
+        let Ok(ptr) = self.mem.alloc_str(val.len()) else {
             *self.result = false;
             return;
         };
@@ -213,7 +213,7 @@ impl<'a> ReturnValue<'a> {
 
     /// Sets the value of the ReturnValue object to blob `&[u8]`
     pub fn set_blob(self, val: &[u8]) {
-        let Some(ptr) = self.mem.alloc_blob(val.len()) else {
+        let Ok(ptr) = self.mem.alloc_blob(val.len()) else {
             *self.result = false;
             return;
         };
@@ -372,14 +372,17 @@ pub struct TVariant {
 }
 
 impl TVariant {
+    /// # Safety
+    /// This function is unsafe because it manipulates pointers, provided by the 1C platform.
+    /// Function is safe as long as 1C platform provides valid pointers.
     pub unsafe fn update_to_str(
         &mut self,
         mem_mngr: &MemoryManager,
         v: &[u16],
-    ) -> Result<u32, ()> {
+    ) -> Result<u32, AllocationError> {
         let mut old_pointer = self.value.data_str.ptr;
 
-        let Some(ptr) = mem_mngr.alloc_str(v.len()) else { return Err(()); };
+        let ptr = mem_mngr.alloc_str(v.len())?;
         ptr::copy_nonoverlapping(v.as_ptr(), ptr.as_ptr(), v.len());
 
         self.value.data_str.ptr = ptr.as_ptr();
@@ -396,10 +399,10 @@ impl TVariant {
         &mut self,
         mem_mngr: &MemoryManager,
         v: &[u8],
-    ) -> Result<u32, ()> {
+    ) -> Result<u32, AllocationError> {
         let mut old_pointer = self.value.data_blob.ptr;
 
-        let Some(ptr) = mem_mngr.alloc_blob(v.len()) else { return Err(()); };
+        let ptr = mem_mngr.alloc_blob(v.len())?;
         ptr::copy_nonoverlapping(v.as_ptr(), ptr.as_ptr(), v.len());
 
         self.value.data_blob.ptr = ptr.as_ptr();

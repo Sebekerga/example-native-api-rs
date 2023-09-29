@@ -79,7 +79,7 @@ unsafe extern "system" fn register_extension_as<T: AddInWrapper>(
 
     let extension_name = component.addin.register_extension_as();
 
-    let Some(ptr) = allocator.alloc_str(extension_name.len()) else {
+    let Ok(ptr) = allocator.alloc_str(extension_name.len()) else {
         return false;
     };
     ptr::copy_nonoverlapping(
@@ -123,7 +123,7 @@ unsafe extern "system" fn get_prop_name<T: AddInWrapper>(
     let Some(prop_name) = component.addin.get_prop_name(num as usize, alias as usize) else {
         return ptr::null();
     };
-    let Some(ptr) = allocator.alloc_str(prop_name.len()) else {
+    let Ok(ptr) = allocator.alloc_str(prop_name.len()) else {
         return ptr::null();
     };
     ptr::copy_nonoverlapping(prop_name.as_ptr(), ptr.as_ptr(), prop_name.len());
@@ -207,7 +207,7 @@ unsafe extern "system" fn get_method_name<T: AddInWrapper>(
     let Some(method_name) = component.addin.get_method_name(num as usize, alias as usize) else {
         return ptr::null();
     };
-    let Some(ptr) = allocator.alloc_str(method_name.len()) else {
+    let Ok(ptr) = allocator.alloc_str(method_name.len()) else {
         return ptr::null();
     };
 

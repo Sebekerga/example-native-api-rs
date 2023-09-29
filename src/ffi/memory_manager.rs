@@ -25,22 +25,31 @@ pub struct MemoryManager {
     vptr: &'static MemoryManagerVTable,
 }
 
+pub struct AllocationError;
+
 impl MemoryManager {
     /// Safe wrapper around `alloc_memory` method of the MemoryManager object
     /// to allocate memory for byte array
     /// # Arguments
     /// * `size` - size of the memory block to allocate
     /// # Returns
-    /// `Option<NonNull<u8>>` - pointer to the allocated memory block
-    pub fn alloc_blob(&self, size: usize) -> Option<NonNull<u8>> {
+    /// `Result<NonNull<u8>, AllocationError>` - pointer to the allocated memory block
+    pub fn alloc_blob(
+        &self,
+        size: usize,
+    ) -> Result<NonNull<u8>, AllocationError> {
         let mut ptr = ptr::null_mut::<c_void>();
-        unsafe {
-            if (self.vptr.alloc_memory)(self, &mut ptr, size as c_ulong) {
-                NonNull::new(ptr as *mut u8)
+        let result = unsafe {
+            if (self.vptr.alloc_memory)(self, &mut ptr, size as c_ulong * 2) {
+                match NonNull::new(ptr as *mut u8) {
+                    Some(ptr) => Ok(ptr),
+                    None => Err(AllocationError),
+                }
             } else {
-                None
+                Err(AllocationError)
             }
-        }
+        };
+        result
     }
 
     /// Safe wrapper around `alloc_memory` method of the MemoryManager object
@@ -48,16 +57,23 @@ impl MemoryManager {
     /// # Arguments
     /// * `size` - size of the memory block to allocate
     /// # Returns
-    /// `Option<NonNull<u16>>` - pointer to the allocated memory block
-    pub fn alloc_str(&self, size: usize) -> Option<NonNull<u16>> {
+    /// `Result<NonNull<u16>, AllocationError>` - pointer to the allocated memory block
+    pub fn alloc_str(
+        &self,
+        size: usize,
+    ) -> Result<NonNull<u16>, AllocationError> {
         let mut ptr = ptr::null_mut::<c_void>();
-        unsafe {
+        let result = unsafe {
             if (self.vptr.alloc_memory)(self, &mut ptr, size as c_ulong * 2) {
-                NonNull::new(ptr as *mut u16)
+                match NonNull::new(ptr as *mut u16) {
+                    Some(ptr) => Ok(ptr),
+                    None => Err(AllocationError),
+                }
             } else {
-                None
+                Err(AllocationError)
             }
-        }
+        };
+        result
     }
 
     pub fn free_memory(&self, ptr: &mut *mut c_void) {
