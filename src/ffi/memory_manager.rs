@@ -39,7 +39,7 @@ impl MemoryManager {
         size: usize,
     ) -> Result<NonNull<u8>, AllocationError> {
         let mut ptr = ptr::null_mut::<c_void>();
-        let result = unsafe {
+        unsafe {
             if (self.vptr.alloc_memory)(self, &mut ptr, size as c_ulong * 2) {
                 match NonNull::new(ptr as *mut u8) {
                     Some(ptr) => Ok(ptr),
@@ -48,8 +48,7 @@ impl MemoryManager {
             } else {
                 Err(AllocationError)
             }
-        };
-        result
+        }
     }
 
     /// Safe wrapper around `alloc_memory` method of the MemoryManager object
@@ -63,7 +62,7 @@ impl MemoryManager {
         size: usize,
     ) -> Result<NonNull<u16>, AllocationError> {
         let mut ptr = ptr::null_mut::<c_void>();
-        let result = unsafe {
+        unsafe {
             if (self.vptr.alloc_memory)(self, &mut ptr, size as c_ulong * 2) {
                 match NonNull::new(ptr as *mut u16) {
                     Some(ptr) => Ok(ptr),
@@ -72,8 +71,7 @@ impl MemoryManager {
             } else {
                 Err(AllocationError)
             }
-        };
-        result
+        }
     }
 
     pub fn free_memory(&self, ptr: &mut *mut c_void) {

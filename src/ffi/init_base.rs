@@ -47,8 +47,8 @@ unsafe extern "system" fn done<T: AddInWrapper>(this: &mut This<0, T>) {
     component.addin.done()
 }
 
-impl<T: AddInWrapper> InitDoneBaseVTable<T> {
-    pub fn new() -> Self {
+impl<T: AddInWrapper> Default for InitDoneBaseVTable<T> {
+    fn default() -> Self {
         Self {
             dtor: 0,
             #[cfg(target_family = "unix")]
