@@ -57,9 +57,11 @@ impl From<chrono::DateTime<chrono::FixedOffset>> for Tm {
 
 impl From<&Tm> for chrono::DateTime<chrono::FixedOffset> {
     fn from(tm: &Tm) -> Self {
+        // The year begins with the year 1900. For example, 2023 == 123
+        // The month starts at 0
         let Some(naive_date) = chrono::NaiveDate::from_ymd_opt(
-            tm.year,
-            tm.mon as u32,
+            tm.year + 1900,
+            tm.mon as u32 + 1,
             tm.mday as u32,
         ) else {
             return chrono::DateTime::default();
@@ -88,9 +90,11 @@ impl From<&Tm> for chrono::DateTime<chrono::FixedOffset> {
 
 impl From<Tm> for chrono::DateTime<chrono::FixedOffset> {
     fn from(tm: Tm) -> Self {
+        // The year begins with the year 1900. For example, 2023 == 123
+        // The month starts at 0
         let Some(naive_date) = chrono::NaiveDate::from_ymd_opt(
-            tm.year,
-            tm.mon as u32,
+            tm.year + 1900,
+            tm.mon as u32 + 1,
             tm.mday as u32,
         ) else {
             return chrono::DateTime::default();
