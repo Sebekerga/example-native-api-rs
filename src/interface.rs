@@ -160,7 +160,7 @@ pub trait AddInWrapper {
     fn call_as_proc(
         &mut self,
         method_num: usize,
-        params: &[ParamValue],
+        params: &mut [ParamValue],
     ) -> bool;
 
     /// Equivalent to `CallAsFunc` from Native API interface and is used to call method
@@ -174,7 +174,7 @@ pub trait AddInWrapper {
     fn call_as_func(
         &mut self,
         method_num: usize,
-        params: &[ParamValue],
+        params: &mut [ParamValue],
         val: ReturnValue,
     ) -> bool;
 

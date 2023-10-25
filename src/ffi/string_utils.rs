@@ -43,6 +43,27 @@ pub fn os_string_nil(s: &str) -> Vec<u16> {
         .collect()
 }
 
+/// Helper function to convert Rust string to UTF-16 string
+/// # Arguments
+/// * `s` - Rust string
+/// # Returns
+/// `Vec<u16>` - UTF-16 string without null terminator
+#[cfg(target_family = "unix")]
+pub fn os_string(s: &str) -> Vec<u16> {
+    s.encode_utf16().collect()
+}
+
+/// Helper function to convert Rust string to UTF-16 string
+/// # Arguments
+/// * `s` - Rust string
+/// # Returns
+/// `Vec<u16>` - UTF-16 string with null terminator
+#[cfg(target_family = "windows")]
+pub fn os_string(s: &str) -> Vec<u16> {
+    let os_str = std::ffi::OsStr::new(s);
+    std::os::windows::prelude::OsStrExt::encode_wide(os_str).collect()
+}
+
 /// Helper function to convert UTF-16 string to Rust string
 /// # Arguments
 /// * `s` - UTF-16 string
